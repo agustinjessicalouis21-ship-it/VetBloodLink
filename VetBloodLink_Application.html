@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VetBloodLink - Veterinary Blood Donor Registry</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --primary: #e61c52;
+      --primary-hover: #c91242;
+      --primary-light: #fde8ee;
+      --text-dark: #1f2937;
+      --text-muted: #6b7280;
+      --bg-main: #f8fafc;
+      --bg-white: #ffffff;
+      --border-color: #e2e8f0;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-dark);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    .nav-item button.active {
+      background-color: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .brand-logo-icon {
+      width: 42px;
+      height: 42px;
+      background: #e61c52;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(230, 28, 82, 0.25);
+      flex-shrink: 0;
+    }
+
+    .modal-overlay {
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(4px);
+    }
+
+    #main-sidebar {
+      transition: width 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+    }
+    
+    .sidebar-collapsed {
+      width: 0px !important;
+      padding: 0px !important;
+      overflow: hidden !important;
+      border-right: none !important;
+    }
+  </style>
+</head>
+<body class="flex min-h-screen relative overflow-x-hidden">
+
+  <!-- Sidebar -->
+  <aside id="main-sidebar" class="w-72 bg-white border-r border-slate-200 flex flex-col p-5 shrink-0 h-screen sticky top-0 z-30 transition-all duration-300">
+    
+    <!-- Sidebar Header & Toggle Close Button -->
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-3 cursor-pointer sidebar-content-item" onclick="switchTab('dashboard', document.getElementById('btn-nav-dash'))">
+        <div class="brand-logo-icon">
+          <!-- Blood drop + Paw logo -->
+          <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2.15C12 2.15 5 10 5 15.5C5 19.09 7.91 22 11.5 22C15.09 22 18 19.09 18 15.5C18 10 12 2.15 12 2.15Z" opacity="0.95"/>
+            <path d="M11.5 18.5C10.1 18.5 9 17.5 9.5 16.2C9.8 15.3 10.7 14.8 11.5 14.8C12.3 14.8 13.2 15.3 13.5 16.2C14 17.5 12.9 18.5 11.5 18.5Z" fill="#e61c52"/>
+            <circle cx="8.5" cy="14" r="1" fill="#e61c52"/>
+            <circle cx="10.2" cy="12.5" r="1" fill="#e61c52"/>
+            <circle cx="12.8" cy="12.5" r="1" fill="#e61c52"/>
+            <circle cx="14.5" cy="14" r="1" fill="#e61c52"/>
+          </svg>
+        </div>
+        <div>
+          <div class="text-base font-bold text-slate-900 leading-tight">VetBloodLink</div>
+          <div class="text-[11px] font-semibold text-slate-500">Central Luzon Donor Registry</div>
+        </div>
+      </div>
+
+      <!-- Button to close/collapse sidebar -->
+      <button onclick="toggleSidebar()" title="Close Navigation Sidebar" class="text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 p-1.5 rounded-lg text-xs font-bold transition">
+        ◀
+      </button>
+    </div>
+
+    <!-- Logged-in User Card & Log Out -->
+    <div class="mb-4 p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between sidebar-content-item">
+      <div id="sidebar-user-info" class="text-xs">
+        <span class="block text-slate-400 font-medium">Logged in as:</span>
+        <span id="user-display-name" class="font-bold text-slate-900">Liliane Suarez</span>
+      </div>
+      <div class="flex gap-1">
+        <button id="btn-auth-trigger" onclick="openAuthModal()" class="text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 px-2 py-1.5 rounded-lg transition" title="Edit Profile">
+          Edit
+        </button>
+        <button onclick="handleLogout()" class="text-xs font-bold text-slate-600 bg-slate-200 hover:bg-slate-300 px-2 py-1.5 rounded-lg transition" title="Log Out">
+          🚪
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation List -->
+    <ul class="flex flex-col gap-1 overflow-y-auto pr-1 text-xs font-semibold sidebar-content-item">
+      <li class="nav-item"><button id="btn-nav-dash" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-100 transition active" onclick="switchTab('dashboard', this)"><span>📊</span> Dashboard</button></li>
+      <li class="nav-item"><button id="btn-nav-prescreen" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-100 transition" onclick="switchTab('prescreen', this)"><span>📋</span> Donor Pre-Screening</button></li>
+      <li class="nav-item"><button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-100 transition" onclick="switchTab('registry', this)"><span>🗄️</span> Donor Registry</button></li>
+      <li class="nav-item"><button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-100 transition" onclick="switchTab('matching', this)"><span>🩸</span> Blood Matching</button></li>
+      <li class="nav-item"><button class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-100 transition" onclick="switchTab('alerts', this)"><span class="flex items-center gap-3"><span>🔔</span> Alerts & Requests</span> <span class="bg-rose-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">2</span></button></li>
+      <li class="nav-item"><button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-100 transition" onclick="switchTab('history', this)"><span>📜</span> Donation History</button></li>
+      <li class="nav-item"><button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-100 transition" onclick="switchTab('iec', this)"><span>📚</span> Educational IEC Hub</button></li>
+      <li class="nav-item"><button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-100 transition" onclick="switchTab('team', this)"><span>🎓</span> Project History & Team</button></li>
+      <li class="nav-item"><button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-100 transition" onclick="switchTab('admin', this)"><span>⚙</span> Admin Control Panel</button></li>
+      <li class="nav-item"><button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-100 transition" onclick="switchTab('privacy', this)"><span>⚖</span> Compliance & Privacy</button></li>
+    </ul>
+
+    <button onclick="switchTab('prescreen', document.getElementById('btn-nav-prescreen'))" class="mt-auto bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-rose-200 transition sidebar-content-item">
+      + Register New Donor
+    </button>
+  </aside>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 p-6 md:p-8 overflow-y-auto w-full transition-all">
+
+    <!-- Top Action Bar -->
+    <div class="flex justify-between items-center mb-6 bg-white p-3.5 px-6 rounded-2xl border border-slate-200 shadow-sm">
+      <div class="flex items-center gap-3">
+        <!-- Menu Toggle Button -->
+        <button onclick="toggleSidebar()" class="bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white border border-rose-200 font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-2 transition">
+          Menu ☰
+        </button>
+        <span class="text-xs text-slate-400 font-medium hidden sm:inline">Central Luzon Vet Portal</span>
+      </div>
+
+      <!-- Top Right User Profile Badge & Logout -->
+      <div class="flex items-center gap-3">
+        <div class="text-right hidden sm:block">
+          <div class="text-xs font-bold text-slate-800" id="header-user-name">Liliane Suarez</div>
+          <div class="text-[10px] text-emerald-600 font-semibold flex items-center justify-end gap-1" id="header-user-status">
+            <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> Registered Owner
+          </div>
+        </div>
+        <div class="w-9 h-9 bg-rose-100 text-rose-700 rounded-full flex items-center justify-center font-bold text-xs border border-rose-200" id="header-user-avatar">
+          LS
+        </div>
+        <button onclick="handleLogout()" id="top-logout-btn" class="bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 text-xs font-bold px-3 py-2 rounded-xl border border-slate-200 transition flex items-center gap-1.5">
+          <span>🚪</span> <span class="hidden md:inline">Log Out</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="page-view active block">
+      <div class="flex justify-between items-start mb-6">
+        <div>
+          <h1 class="text-2xl font-extrabold text-slate-900">Dashboard</h1>
+          <p class="text-xs text-slate-500 mt-1">Real-time donor status and transfusion readiness metrics across Central Luzon</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col justify-between shadow-sm">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Registered Donors</span>
+          <div class="flex justify-between items-end mt-4"><span class="text-3xl font-black text-slate-900">4</span><span class="text-2xl">👥</span></div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col justify-between shadow-sm">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Eligible & Ready</span>
+          <div class="flex justify-between items-end mt-4"><span class="text-3xl font-black text-emerald-600">3</span><span class="text-2xl">✓</span></div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col justify-between shadow-sm">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Ineligible / Cooldown</span>
+          <div class="flex justify-between items-end mt-4"><span class="text-3xl font-black text-amber-500">1</span><span class="text-2xl">⚠️</span></div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col justify-between shadow-sm">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Emergency Requests</span>
+          <div class="flex justify-between items-end mt-4"><span class="text-3xl font-black text-rose-600">2</span><span class="text-2xl">🚨</span></div>
+        </div>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <h2 class="text-base font-bold text-slate-900 mb-4">Recent Emergency Blood Requests</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 uppercase text-slate-400 font-bold border-b border-slate-200">
+              <tr>
+                <th class="p-3">Patient / Species</th>
+                <th class="p-3">Blood Type Needed</th>
+                <th class="p-3">Clinic Name</th>
+                <th class="p-3">Location</th>
+                <th class="p-3">Urgency</th>
+                <th class="p-3">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr>
+                <td class="p-3 font-bold text-slate-800">Max (Golden Retriever)</td>
+                <td class="p-3 font-semibold text-rose-600">Canine DEA 1.1 Positive</td>
+                <td class="p-3">CLSU Veterinary Teaching Hospital</td>
+                <td class="p-3">Science City of Muñoz</td>
+                <td class="p-3"><span class="bg-red-100 text-red-700 font-bold px-2.5 py-1 rounded-full text-[10px]">CRITICAL</span></td>
+                <td class="p-3"><button class="bg-rose-600 text-white font-semibold text-xs px-3 py-1.5 rounded-lg hover:bg-rose-700" onclick="switchTab('matching', null)">Match Donors</button></td>
+              </tr>
+              <tr>
+                <td class="p-3 font-bold text-slate-800">Mimi (Domestic Short Hair)</td>
+                <td class="p-3 font-semibold text-rose-600">Feline Type A</td>
+                <td class="p-3">Centrovet Animal Clinic</td>
+                <td class="p-3">Cabanatuan City</td>
+                <td class="p-3"><span class="bg-orange-100 text-orange-700 font-bold px-2.5 py-1 rounded-full text-[10px]">HIGH</span></td>
+                <td class="p-3"><button class="bg-rose-600 text-white font-semibold text-xs px-3 py-1.5 rounded-lg hover:bg-rose-700" onclick="switchTab('matching', null)">Match Donors</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRE-SCREENING -->
+    <section id="prescreen" class="page-view hidden">
+      <div class="mb-6">
+        <h1 class="text-2xl font-extrabold text-slate-900">Donor Pre-Screening</h1>
+        <p class="text-xs text-slate-500 mt-1">Clinical criteria evaluation form for candidate donor pets</p>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 max-w-2xl shadow-sm">
+        <form onsubmit="event.preventDefault(); evaluatePreScreen();" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Owner Name</label>
+              <input type="text" id="ps-owner-name" value="Liliane Suarez" class="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none" required>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Pet Name</label>
+              <input type="text" id="ps-name" placeholder="e.g. Buddy" class="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none" required>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Species</label>
+              <select id="ps-species" class="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none">
+                <option value="canine">Canine (Dog)</option>
+                <option value="feline">Feline (Cat)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Breed</label>
+              <input type="text" id="ps-breed" placeholder="e.g. Labrador / Persian" class="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none" required>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Weight (kg)</label>
+              <input type="number" step="0.1" id="ps-weight" placeholder="Canine: ≥25kg | Feline: ≥4.5kg" class="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none" required>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Age (Years)</label>
+              <input type="number" id="ps-age" placeholder="1 - 8 Years" class="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none" required>
+            </div>
+
+            <!-- EXPANDED VACCINATION STATUS OPTIONS -->
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-bold text-slate-700 mb-1">Vaccination Status</label>
+              <select id="ps-vaccine" class="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none">
+                <option value="fully_updated">Fully Up-to-Date (Complete Primary & Annual Boosters)</option>
+                <option value="partially_vaccinated">Partially Vaccinated (Missing Booster or Incomplete Series)</option>
+                <option value="due_for_renewal">Due for Renewal (Expired within 30 days)</option>
+                <option value="unvaccinated">Unvaccinated / Unknown History</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs p-3 rounded-xl transition shadow-md shadow-rose-100">
+            Evaluate Clinical Eligibility
+          </button>
+        </form>
+
+        <div id="ps-result-box" class="hidden mt-6 p-5 rounded-xl border">
+          <div id="ps-status-header" class="text-sm font-bold mb-2"></div>
+          <div id="ps-details-text" class="text-xs leading-relaxed"></div>
+          
+          <div id="ps-next-steps" class="hidden mt-4 pt-4 border-t border-emerald-200 bg-emerald-50/50 p-4 rounded-xl text-emerald-900">
+            <h4 class="font-bold text-xs uppercase text-emerald-800 mb-1">📅 Donor Scheduling & Owner Notification:</h4>
+            <p class="text-xs leading-relaxed">
+              An automated information message has been dispatched to <strong id="ps-owner-display">Liliane Suarez</strong>. Donation schedule procedures:
+            </p>
+            <ol class="list-decimal list-inside text-xs mt-2 space-y-1 font-medium text-emerald-800">
+              <li><strong>Physical Examination:</strong> Complete PCV/TS & blood chemistry checkup at a partner clinic.</li>
+              <li><strong>Scheduling:</strong> Reserve collection appointment at designated partner hospital.</li>
+              <li><strong>Pre-Donation Prep:</strong> Keep pet hydrated 24 hours prior; withhold solid food 3 hours prior.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DONOR REGISTRY -->
+    <section id="registry" class="page-view hidden">
+      <div class="mb-6">
+        <h1 class="text-2xl font-extrabold text-slate-900">Donor Registry</h1>
+        <p class="text-xs text-slate-500 mt-1">Verified donor pet records with clinical parameters</p>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 uppercase text-slate-400 font-bold border-b border-slate-200">
+              <tr><th>Reg ID</th><th>Pet Name & Owner</th><th>Species / Breed</th><th>Weight</th><th>Blood Type</th><th>Location</th><th>Status</th></tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr>
+                <td class="p-3">#DON-001</td><td class="p-3 font-bold text-slate-900">Buster <span class="text-slate-400 font-normal">(Liliane Suarez)</span></td><td class="p-3">Canine / Golden Retriever</td><td class="p-3">28.5 kg</td><td class="p-3 font-semibold text-rose-600">DEA 1.1 Positive</td><td class="p-3">Science City of Muñoz</td><td class="p-3"><span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-md">READY</span></td>
+              </tr>
+              <tr>
+                <td class="p-3">#DON-002</td><td class="p-3 font-bold text-slate-900">Luna <span class="text-slate-400 font-normal">(R. Santos)</span></td><td class="p-3">Canine / German Shepherd</td><td class="p-3">31.0 kg</td><td class="p-3 font-semibold text-rose-600">DEA 1.1 Positive</td><td class="p-3">San Jose City</td><td class="p-3"><span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-md">READY</span></td>
+              </tr>
+              <tr>
+                <td class="p-3">#DON-003</td><td class="p-3 font-bold text-slate-900">Garfield <span class="text-slate-400 font-normal">(M. Garcia)</span></td><td class="p-3">Feline / Domestic Short Hair</td><td class="p-3">5.2 kg</td><td class="p-3 font-semibold text-rose-600">Type A</td><td class="p-3">Talavera</td><td class="p-3"><span class="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-md">COOLDOWN (24 Days)</span></td>
+              </tr>
+              <tr>
+                <td class="p-3">#DON-004</td><td class="p-3 font-bold text-slate-900">Rocky <span class="text-slate-400 font-normal">(J. Dela Cruz)</span></td><td class="p-3">Canine / Labrador Retriever</td><td class="p-3">29.0 kg</td><td class="p-3 font-semibold text-rose-600">DEA 1.1 Negative</td><td class="p-3">Cabanatuan City</td><td class="p-3"><span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-md">READY</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- BLOOD MATCHING -->
+    <section id="matching" class="page-view hidden">
+      <div class="mb-6">
+        <h1 class="text-2xl font-extrabold text-slate-900">Blood Matching</h1>
+        <p class="text-xs text-slate-500 mt-1">Species-specific blood compatibility search engine</p>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 mb-6 shadow-sm">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Recipient Species</label>
+            <select id="match-species" onchange="updateBloodTypeDropdown()" class="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:ring-2 focus:ring-rose-500 focus:outline-none">
+              <option value="canine">Canine (Dog)</option>
+              <option value="feline">Feline (Cat)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Required Blood Type</label>
+            <select id="match-bloodtype" class="w-full border border-slate-200 rounded-xl p-2.5 text-xs font-semibold focus:ring-2 focus:ring-rose-500 focus:outline-none">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+        </div>
+        <button onclick="executeMatchingSearch()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shadow-md shadow-rose-100">
+          Execute Compatibility Search
+        </button>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <h2 class="text-base font-bold text-slate-900 mb-4">Compatible Registered Donors</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 uppercase text-slate-400 font-bold border-b border-slate-200">
+              <tr><th>Match Score</th><th>Donor Pet & Owner</th><th>Blood Type</th><th>Proximity</th><th>Owner Contact</th><th>Action</th></tr>
+            </thead>
+            <tbody id="match-results-body" class="divide-y divide-slate-100">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ALERTS & REQUESTS -->
+    <section id="alerts" class="page-view hidden">
+      <div class="mb-6">
+        <h1 class="text-2xl font-extrabold text-slate-900">Alerts & Dispatch Center</h1>
+        <p class="text-xs text-slate-500 mt-1">Logs of emergency SMS dispatches sent to donor owners</p>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <table class="w-full text-left text-xs text-slate-600">
+          <thead class="bg-slate-50 uppercase text-slate-400 font-bold border-b border-slate-200">
+            <tr><th>Alert ID</th><th>Target Species / Type</th><th>Clinic</th><th>SMS Dispatched</th><th>Responses</th><th>Status</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="p-3">#ALT-802</td><td class="p-3 font-semibold text-rose-600">Canine / DEA 1.1 Pos</td><td class="p-3">CLSU Vet Teaching Hospital</td><td class="p-3">12 SMS Sent</td><td class="p-3"><span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-md">2 Accepted</span></td><td class="p-3"><span class="bg-rose-100 text-rose-700 font-bold px-2 py-0.5 rounded-md">ACTIVE</span></td>
+            </tr>
+            <tr>
+              <td class="p-3">#ALT-801</td><td class="p-3 font-semibold text-rose-600">Feline / Type A</td><td class="p-3">Centrovet Animal Clinic</td><td class="p-3">8 SMS Sent</td><td class="p-3"><span class="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-md">1 En Route</span></td><td class="p-3"><span class="bg-rose-100 text-rose-700 font-bold px-2 py-0.5 rounded-md">ACTIVE</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- DONATION HISTORY -->
+    <section id="history" class="page-view hidden">
+      <div class="mb-6">
+        <h1 class="text-2xl font-extrabold text-slate-900">Donation History Log</h1>
+        <p class="text-xs text-slate-500 mt-1">Ledger of blood collections featuring automated 56-day cooldown countdowns</p>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <table class="w-full text-left text-xs text-slate-600">
+          <thead class="bg-slate-50 uppercase text-slate-400 font-bold border-b border-slate-200">
+            <tr><th>Transfusion ID</th><th>Donor Name</th><th>Recipient Patient</th><th>Volume</th><th>Collection Clinic</th><th>Date</th><th>56-Day Cooldown Status</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="p-3">#TRF-2026-09</td><td class="p-3 font-bold text-slate-900">Garfield (Cat)</td><td class="p-3">Mimi</td><td class="p-3">45 mL</td><td class="p-3">At Home Veterinary Clinic</td><td class="p-3">2026-08-28</td><td class="p-3"><span class="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-md">24 Days Remaining</span></td>
+            </tr>
+            <tr>
+              <td class="p-3">#TRF-2026-04</td><td class="p-3 font-bold text-slate-900">Buster (Dog)</td><td class="p-3">Bruno</td><td class="p-3">350 mL</td><td class="p-3">CLSU Vet Hospital</td><td class="p-3">2026-05-10</td><td class="p-3"><span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-md">CLEARED FOR DONATION</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- EDUCATIONAL IEC HUB -->
+    <section id="iec" class="page-view hidden">
+      <div class="mb-6">
+        <h1 class="text-2xl font-extrabold text-slate-900">Educational & IEC Resource Hub</h1>
+        <p class="text-xs text-slate-500 mt-1">Clinical transfusion protocols and pet owner awareness materials</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <h3 class="font-bold text-slate-900 mb-2">📄 Clinical Transfusion Protocol Guide (2026)</h3>
+          <p class="text-xs text-slate-500 mb-4">Standardized procedures for cross-matching, blood banking, and screening.</p>
+          <button onclick="alert('Downloading: CLSU_Vet_Transfusion_Protocol_2026.pdf')" class="border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs px-4 py-2 rounded-xl transition">📥 Download PDF (1.4 MB)</button>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <h3 class="font-bold text-slate-900 mb-2">📢 Pet Owner Donor Awareness Trifold Brochure</h3>
+          <p class="text-xs text-slate-500 mb-4">Printable educational campaign brochure detailing donor recovery and benefits.</p>
+          <button onclick="alert('Downloading: Pet_Owner_Awareness_Brochure.pdf')" class="border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs px-4 py-2 rounded-xl transition">📥 Download PDF (3.2 MB)</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROJECT HISTORY & RESEARCH TEAM -->
+    <section id="team" class="page-view hidden">
+      <div class="mb-6">
+        <h1 class="text-2xl font-extrabold text-slate-900">Project History & Research Team</h1>
+        <p class="text-xs text-slate-500 mt-1">Academic background, student proponents, partner clinics, and LGU directories</p>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 mb-6 shadow-sm">
+        <h2 class="text-base font-bold text-slate-900 mb-2">Academic Origin</h2>
+        <p class="text-xs text-slate-700 leading-relaxed">
+          <strong>VetBloodLink</strong> was conceptualized and developed under the College of Veterinary Medicine at <strong>Central Luzon State University (CLSU)</strong>, Science City of Muñoz, Nueva Ecija.
+        </p>
+      </div>
+
+      <!-- Proponents List (First Name Last Name format) -->
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 mb-6 shadow-sm">
+        <h2 class="text-base font-bold text-slate-900 mb-4">Student Proponents & Research Team</h2>
+        <table class="w-full text-left text-xs text-slate-600">
+          <thead class="bg-slate-50 uppercase text-slate-400 font-bold border-b border-slate-200">
+            <tr><th>Proponent Name</th><th>Academic Institution</th><th>Role</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="p-3 font-bold text-slate-900">Fionna Gayle Adsuara</td><td class="p-3">Doctor of Veterinary Medicine Candidate (CLSU)</td><td class="p-3">Student Proponent</td></tr>
+            <tr><td class="p-3 font-bold text-slate-900">Jessica Louis Agustin</td><td class="p-3">Doctor of Veterinary Medicine Candidate (CLSU)</td><td class="p-3">Student Proponent</td></tr>
+            <tr><td class="p-3 font-bold text-slate-900">Christian Isaac Alejo</td><td class="p-3">Doctor of Veterinary Medicine Candidate (CLSU)</td><td class="p-3">Student Proponent</td></tr>
+            <tr><td class="p-3 font-bold text-slate-900">Rhinoah Joie Bagalawis</td><td class="p-3">Doctor of Veterinary Medicine Candidate (CLSU)</td><td class="p-3">Student Proponent</td></tr>
+            <tr><td class="p-3 font-bold text-slate-900">Beacharice Magpantay</td><td class="p-3">Doctor of Veterinary Medicine Candidate (CLSU)</td><td class="p-3">Student Proponent</td></tr>
+            <tr><td class="p-3 font-bold text-slate-900">Jhonas Aldrei Palapuz</td><td class="p-3">Doctor of Veterinary Medicine Candidate (CLSU)</td><td class="p-3">Student Proponent</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Partner Clinics Directory with Direct Contact Numbers -->
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 mb-6 shadow-sm">
+        <h2 class="text-base font-bold text-slate-900 mb-4">Collaborating Veterinary Clinics</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 uppercase text-slate-400 font-bold border-b border-slate-200">
+              <tr><th>Clinic Name</th><th>Facility Type</th><th>Contact Numbers & Reachability</th></tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr><td class="p-3 font-bold text-slate-800">At Home Veterinary Clinic</td><td class="p-3">Veterinary Clinic</td><td class="p-3 font-medium text-slate-900">+63 968 548 4443 | FB: At Home Vet Clinic</td></tr>
+              <tr><td class="p-3 font-bold text-slate-800">Vetstreet Veterinary Clinic and Grooming Center</td><td class="p-3">Veterinary Clinic</td><td class="p-3 font-medium text-slate-900">+63 932 307 0027 | Mabini St. Ext, Muñoz</td></tr>
+              <tr><td class="p-3 font-bold text-slate-800">Peterrific Veterinary Clinic</td><td class="p-3">Veterinary Clinic</td><td class="p-3 font-medium text-slate-900">+63 917 882 1093 | San Jose City Road</td></tr>
+              <tr><td class="p-3 font-bold text-slate-800">St. Sebastian Veterinary Clinic</td><td class="p-3">Veterinary Clinic</td><td class="p-3 font-medium text-slate-900">+63 922 410 8821 | Cabanatuan City</td></tr>
+              <tr><td class="p-3 font-bold text-slate-800">Vetmo Animal Clinic and Grooming Center</td><td class="p-3">Veterinary Clinic</td><td class="p-3 font-medium text-slate-900">+63 953 190 9978 | Talavera, Nueva Ecija</td></tr>
+              <tr><td class="p-3 font-bold text-slate-800">Centrovet Animal Clinic</td><td class="p-3">Veterinary Clinic</td><td class="p-3 font-medium text-slate-900">+63 917 301 4482 | Cabanatuan City</td></tr>
+              <tr><td class="p-3 font-bold text-slate-800">Mustangs Veterinary Clinic</td><td class="p-3">Veterinary Clinic</td><td class="p-3 font-medium text-slate-900">+63 945 220 9102 | CLSU Compound, Muñoz</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Local Government Unit (LGU) Partners -->
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <h2 class="text-base font-bold text-slate-900 mb-4">Local Government Unit (LGU) Partners</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 uppercase text-slate-400 font-bold border-b border-slate-200">
+              <tr><th>LGU Partner / Office Name</th><th>Jurisdiction / Location</th><th>Contact Hotline & Official Reachability</th></tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr>
+                <td class="p-3 font-bold text-slate-800">Office of the City Veterinarian - Science City of Muñoz</td>
+                <td class="p-3">Science City of Muñoz, Nueva Ecija</td>
+                <td class="p-3 font-medium text-slate-900">+63 (044) 940 5123 | cityvet.munoz@gmail.com</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-bold text-slate-800">Provincial Veterinary Office (PVO) - Nueva Ecija</td>
+                <td class="p-3">Palanayan, Palayan City, Nueva Ecija</td>
+                <td class="p-3 font-medium text-slate-900">+63 (044) 940 1120 | pvo.nuevaecija@gov.ph</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-bold text-slate-800">City Agriculture & Veterinary Office - San Jose City</td>
+                <td class="p-3">San Jose City, Nueva Ecija</td>
+                <td class="p-3 font-medium text-slate-900">+63 (044) 511 2091 | cavo.sanjose@gmail.com</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-bold text-slate-800">Municipal Veterinary Services - Talavera LGU</td>
+                <td class="p-3">Talavera, Nueva Ecija</td>
+                <td class="p-3 font-medium text-slate-900">+63 (044) 411 0928 | vet.talavera@gov.ph</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ADMIN CONTROL PANEL -->
+    <section id="admin" class="page-view hidden">
+      <div class="mb-6">
+        <h1 class="text-2xl font-extrabold text-slate-900">Admin Control Panel</h1>
+        <p class="text-xs text-slate-500 mt-1">System controls and manual database cloud backups</p>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <h2 class="text-base font-bold text-slate-900 mb-2">Database Cloud Snapshot</h2>
+        <p class="text-xs text-slate-500 mb-4">Execute manual backup for registered donor records and match logs.</p>
+        <button onclick="alert('Manual backup completed successfully!')" class="border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs px-4 py-2 rounded-xl transition">💾 Run Cloud Backup</button>
+      </div>
+    </section>
+
+    <!-- COMPLIANCE & PRIVACY -->
+    <section id="privacy" class="page-view hidden">
+      <div class="mb-6">
+        <h1 class="text-2xl font-extrabold text-slate-900">Compliance & Privacy</h1>
+        <p class="text-xs text-slate-500 mt-1">Data Privacy Act of 2012 (RA 10173) policy</p>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <h2 class="text-base font-bold text-slate-900 mb-2">Privacy Policy</h2>
+        <p class="text-xs text-slate-700 leading-relaxed">
+          VetBloodLink adheres to Republic Act No. 10173 (Data Privacy Act of 2012). Personal information including pet owner names, phone numbers, and addresses collected on this site are stored securely and used exclusively for emergency animal transfusion coordination.
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL 1: DISPATCH ALERT MODAL -->
+  <div id="dispatchAlertModal" class="modal-overlay fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+      <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">🚨</span>
+          <div>
+            <h3 class="text-base font-extrabold text-slate-900">Emergency Alert Dispatched</h3>
+            <p class="text-xs text-emerald-600 font-semibold">SMS Sent Successfully</p>
+          </div>
+        </div>
+        <button onclick="closeDispatchModal()" class="text-slate-400 hover:text-slate-700 font-bold text-base">✕</button>
+      </div>
+
+      <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 mb-4 text-xs text-emerald-900 leading-relaxed">
+        A priority SMS broadcast has been sent to the owner of <strong id="alert-modal-pet">Buster</strong> (<span id="alert-modal-owner">Liliane Suarez</span>).
+      </div>
+
+      <div class="space-y-3 mb-5">
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+          <div class="text-slate-400 font-semibold text-[11px]">REGISTERED CONTACT PHONE</div>
+          <div class="text-sm font-extrabold text-slate-900 mt-0.5" id="alert-modal-phone">+63 917 555 0192</div>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <a id="btn-call-href" href="tel:+639175550192" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition">
+          📞 Call Owner Now
+        </a>
+        <button onclick="copyOwnerContact()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs py-2.5 px-4 rounded-xl transition">
+          📋 Copy Phone Number
+        </button>
+        <button onclick="closeDispatchModal()" class="w-full text-slate-400 hover:text-slate-600 text-xs py-1.5 font-semibold">
+          Dismiss
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: AUTH MODAL (SIGN IN / EDIT ACCOUNT) -->
+  <div id="authModal" class="modal-overlay fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+      <div class="flex justify-between items-center mb-5 pb-3 border-b border-slate-100">
+        <div>
+          <h3 id="auth-modal-title" class="text-base font-extrabold text-slate-900">Sign Up / Owner Account</h3>
+          <p class="text-xs text-slate-500">Manage owner profile details</p>
+        </div>
+        <button onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-700 font-bold text-base">✕</button>
+      </div>
+
+      <form id="form-signup" onsubmit="event.preventDefault(); handleSignUp();" class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Full Name of Owner</label>
+          <input type="text" id="reg-owner-name" value="Liliane Suarez" class="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none" required>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Contact Number</label>
+          <input type="tel" id="reg-phone" value="+63 917 555 0192" class="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none" required>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Address</label>
+          <input type="text" id="reg-address" value="Science City of Muñoz, Nueva Ecija" class="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none" required>
+        </div>
+
+        <div class="pt-2">
+          <label class="flex items-start gap-2.5 cursor-pointer">
+            <input type="checkbox" id="reg-terms-check" checked class="mt-0.5 rounded border-slate-300 text-rose-600 focus:ring-rose-500" required>
+            <span class="text-[11px] text-slate-600 leading-snug">
+              I agree to the <a href="#" onclick="switchTab('privacy', null); closeAuthModal();" class="text-rose-600 font-bold underline">Terms & Conditions</a>, Data Privacy Act compliance policies, and grant consent for emergency contact.
+            </span>
+          </label>
+        </div>
+
+        <button type="submit" id="auth-submit-btn" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs p-3 rounded-xl transition mt-2 shadow-md shadow-rose-100">
+          Save Owner Information & Log In
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let isSidebarOpen = true;
+    let isLoggedIn = true;
+
+    // Toggle Sidebar Open / Close
+    function toggleSidebar() {
+      const sidebar = document.getElementById('main-sidebar');
+      if (isSidebarOpen) {
+        sidebar.classList.add('sidebar-collapsed');
+        isSidebarOpen = false;
+      } else {
+        sidebar.classList.remove('sidebar-collapsed');
+        isSidebarOpen = true;
+      }
+    }
+
+    // Tab switcher logic
+    function switchTab(tabId, btnElement) {
+      document.querySelectorAll('.page-view').forEach(view => view.classList.add('hidden'));
+      document.querySelectorAll('.nav-item button').forEach(btn => btn.classList.remove('active'));
+      
+      const targetPage = document.getElementById(tabId);
+      if(targetPage) targetPage.classList.remove('hidden');
+
+      if (btnElement) {
+        btnElement.classList.add('active');
+      }
+    }
+
+    // Logout and Login Handler
+    function handleLogout() {
+      if (isLoggedIn) {
+        isLoggedIn = false;
+        // Update Header & Sidebar UI for logged out state
+        document.getElementById('user-display-name').innerText = "Guest User";
+        document.getElementById('header-user-name').innerText = "Guest User";
+        document.getElementById('header-user-avatar').innerText = "GU";
+        document.getElementById('header-user-status').innerHTML = `<span class="w-1.5 h-1.5 bg-amber-500 rounded-full"></span> Logged Out`;
+        
+        const logoutBtn = document.getElementById('top-logout-btn');
+        logoutBtn.innerHTML = `<span>🔑</span> <span class="hidden md:inline">Log In</span>`;
+        logoutBtn.className = "bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-rose-200";
+
+        // Open login modal
+        document.getElementById('auth-modal-title').innerText = "Log In / Register Owner";
+        document.getElementById('auth-submit-btn').innerText = "Log In as Owner";
+        openAuthModal();
+      } else {
+        openAuthModal();
+      }
+    }
+
+    // Modal Handlers
+    function openAuthModal() {
+      document.getElementById('authModal').classList.remove('hidden');
+    }
+
+    function closeAuthModal() {
+      document.getElementById('authModal').classList.add('hidden');
+    }
+
+    function handleSignUp() {
+      const name = document.getElementById('reg-owner-name').value || "Liliane Suarez";
+      isLoggedIn = true;
+
+      // Update User Interface Details
+      document.getElementById('user-display-name').innerText = name;
+      document.getElementById('header-user-name').innerText = name;
+      document.getElementById('ps-owner-name').value = name;
+      
+      // Calculate initials
+      const initials = name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+      document.getElementById('header-user-avatar').innerText = initials || "LS";
+      
+      document.getElementById('header-user-status').innerHTML = `<span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> Registered Owner`;
+
+      const logoutBtn = document.getElementById('top-logout-btn');
+      logoutBtn.innerHTML = `<span>🚪</span> <span class="hidden md:inline">Log Out</span>`;
+      logoutBtn.className = "bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 text-xs font-bold px-3 py-2 rounded-xl border border-slate-200 transition flex items-center gap-1.5";
+
+      closeAuthModal();
+    }
+
+    // Dispatch Alert Modal Trigger
+    function triggerDispatchAlert(petName, ownerName, phoneNum) {
+      document.getElementById('alert-modal-pet').innerText = petName;
+      document.getElementById('alert-modal-owner').innerText = ownerName;
+      document.getElementById('alert-modal-phone').innerText = phoneNum;
+      document.getElementById('btn-call-href').href = "tel:" + phoneNum.replace(/\s+/g, '');
+      document.getElementById('dispatchAlertModal').classList.remove('hidden');
+    }
+
+    function closeDispatchModal() {
+      document.getElementById('dispatchAlertModal').classList.add('hidden');
+    }
+
+    function copyOwnerContact() {
+      const num = document.getElementById('alert-modal-phone').innerText;
+      
+      const tempInput = document.createElement("input");
+      tempInput.value = num;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand("copy");
+      document.body.removeChild(tempInput);
+
+      alert(`Copied ${num} to clipboard!`);
+    }
+
+    // Pre-screening evaluator with updated vaccine rules
+    function evaluatePreScreen() {
+      const ownerName = document.getElementById('ps-owner-name').value || "Liliane Suarez";
+      const petName = document.getElementById('ps-name').value || "Pet";
+      const species = document.getElementById('ps-species').value;
+      const breed = document.getElementById('ps-breed').value;
+      const weight = parseFloat(document.getElementById('ps-weight').value);
+      const age = parseInt(document.getElementById('ps-age').value);
+      const vaccineStatus = document.getElementById('ps-vaccine').value;
+
+      const resultBox = document.getElementById('ps-result-box');
+      const header = document.getElementById('ps-status-header');
+      const details = document.getElementById('ps-details-text');
+      const nextSteps = document.getElementById('ps-next-steps');
+
+      resultBox.classList.remove('hidden');
+      const minWeight = species === 'canine' ? 25 : 4.5;
+
+      const isVaccineEligible = vaccineStatus === 'fully_updated';
+
+      if (weight >= minWeight && age >= 1 && age <= 8 && isVaccineEligible) {
+        resultBox.className = "mt-6 p-5 rounded-xl border border-emerald-200 bg-emerald-50/40";
+        header.className = "text-sm font-bold text-emerald-800 flex items-center gap-2";
+        header.innerHTML = `<span>✅</span> <strong>${petName} (${species.toUpperCase()} - ${breed}) IS ELIGIBLE FOR BLOOD DONATION!</strong>`;
+        
+        details.className = "text-xs text-emerald-700 leading-relaxed mt-1";
+        details.innerHTML = `All primary physical and clinical criteria met (Weight: ${weight}kg ≥ ${minWeight}kg threshold; Age: ${age} years; Vaccination Status: Fully Up-to-Date).`;
+
+        document.getElementById('ps-owner-display').innerText = ownerName;
+        nextSteps.classList.remove('hidden');
+      } else {
+        resultBox.className = "mt-6 p-5 rounded-xl border border-red-200 bg-red-50/40";
+        header.className = "text-sm font-bold text-red-800 flex items-center gap-2";
+        header.innerHTML = `<span>❌</span> <strong>${petName} IS TEMPORARILY INELIGIBLE FOR BLOOD DONATION</strong>`;
+        
+        let reasonText = [];
+        if (weight < minWeight) reasonText.push(`Weight (${weight}kg) is below required ${minWeight}kg for ${species.toUpperCase()}`);
+        if (age < 1 || age > 8) reasonText.push(`Age (${age} yrs) must be between 1 and 8 years`);
+        if (!isVaccineEligible) {
+          if (vaccineStatus === 'partially_vaccinated') reasonText.push("Vaccination status is incomplete/partially updated");
+          else if (vaccineStatus === 'due_for_renewal') reasonText.push("Vaccinations are due for renewal");
+          else reasonText.push("Pet must be fully vaccinated with up-to-date core vaccines and rabies");
+        }
+
+        details.className = "text-xs text-red-700 leading-relaxed mt-1";
+        details.innerHTML = `<strong>Ineligibility Reasons:</strong><br>• ` + reasonText.join("<br>• ");
+
+        nextSteps.classList.add('hidden');
+      }
+    }
+
+    // Blood Matching engine with canine / feline rules
+    function updateBloodTypeDropdown() {
+      const species = document.getElementById('match-species').value;
+      const bloodSelect = document.getElementById('match-bloodtype');
+      bloodSelect.innerHTML = "";
+
+      if (species === 'canine') {
+        const opt1 = document.createElement('option');
+        opt1.value = 'DEA 1.1 Positive';
+        opt1.textContent = 'DEA 1.1 Positive';
+
+        const opt2 = document.createElement('option');
+        opt2.value = 'DEA 1.1 Negative';
+        opt2.textContent = 'DEA 1.1 Negative';
+
+        bloodSelect.appendChild(opt1);
+        bloodSelect.appendChild(opt2);
+      } else {
+        const optA = document.createElement('option');
+        optA.value = 'Type A';
+        optA.textContent = 'Type A';
+
+        const optB = document.createElement('option');
+        optB.value = 'Type B';
+        optB.textContent = 'Type B';
+
+        const optAB = document.createElement('option');
+        optAB.value = 'Type AB';
+        optAB.textContent = 'Type AB';
+
+        bloodSelect.appendChild(optA);
+        bloodSelect.appendChild(optB);
+        bloodSelect.appendChild(optAB);
+      }
+
+      executeMatchingSearch();
+    }
+
+    function executeMatchingSearch() {
+      const species = document.getElementById('match-species').value;
+      const bloodType = document.getElementById('match-bloodtype').value;
+      const tbody = document.getElementById('match-results-body');
+
+      if (species === 'canine') {
+        tbody.innerHTML = `
+          <tr>
+            <td class="p-3"><span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-md">98% Match</span></td>
+            <td class="p-3 font-bold text-slate-800">Buster <span class="text-slate-400 font-normal">(Liliane Suarez)</span></td>
+            <td class="p-3 font-semibold text-rose-600">${bloodType}</td>
+            <td class="p-3">2.5 km (Science City of Muñoz)</td>
+            <td class="p-3">+63 917 555 0192</td>
+            <td class="p-3"><button class="bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs px-3 py-1.5 rounded-lg transition" onclick="triggerDispatchAlert('Buster', 'Liliane Suarez', '+63 917 555 0192')">Dispatch Alert</button></td>
+          </tr>
+          <tr>
+            <td class="p-3"><span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-md">92% Match</span></td>
+            <td class="p-3 font-bold text-slate-800">Luna <span class="text-slate-400 font-normal">(R. Santos)</span></td>
+            <td class="p-3 font-semibold text-rose-600">${bloodType}</td>
+            <td class="p-3">14.2 km (San Jose City)</td>
+            <td class="p-3">+63 918 555 0143</td>
+            <td class="p-3"><button class="bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs px-3 py-1.5 rounded-lg transition" onclick="triggerDispatchAlert('Luna', 'R. Santos', '+63 918 555 0143')">Dispatch Alert</button></td>
+          </tr>
+        `;
+      } else {
+        tbody.innerHTML = `
+          <tr>
+            <td class="p-3"><span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-md">95% Match</span></td>
+            <td class="p-3 font-bold text-slate-800">Mimi <span class="text-slate-400 font-normal">(M. Garcia)</span></td>
+            <td class="p-3 font-semibold text-rose-600">${bloodType}</td>
+            <td class="p-3">5.0 km (Talavera)</td>
+            <td class="p-3">+63 919 555 0881</td>
+            <td class="p-3"><button class="bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs px-3 py-1.5 rounded-lg transition" onclick="triggerDispatchAlert('Mimi', 'M. Garcia', '+63 919 555 0881')">Dispatch Alert</button></td>
+          </tr>
+        `;
+      }
+    }
+
+    // Initialize application state
+    window.onload = function() {
+      updateBloodTypeDropdown();
+    };
+  </script>
+</body>
+</html>
